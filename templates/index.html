@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Constructor de CV</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            max-width: 700px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-messages {
+            height: 450px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f7f7f7;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 18px;
+            border-radius: 20px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .message.bot {
+            background: #667eea;
+            color: white;
+            margin-right: auto;
+        }
+
+        .message.user {
+            background: #4CAF50;
+            color: white;
+            margin-left: auto;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ddd;
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #chatInput:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            margin-left: 10px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: scale(1.02);
+        }
+
+        .form-campo {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .form-campo input, .form-campo textarea, .form-campo select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .form-campo button {
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .download-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: none;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: #e94560;
+        }
+
+        .download-btn:hover {
+            background: #c73a54;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2>📄 Constructor de CV</h2>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">¡Hola! Vamos a crear tu CV. ¿Cuál es tu nombre y apellidos?</div>
+        </div>
+        <div class="input-area" id="inputArea">
+            <input type="text" id="chatInput" placeholder="Escribe aquí...">
+            <button id="sendBtn">Enviar</button>
+        </div>
+        <div class="download-container" id="downloadContainer">
+            <button id="downloadBtn" class="download-btn">📄 DESCARGAR CV EN PDF</button>
+        </div>
+    </div>
+
+    <script>
+        let step = 0;
+        let cvData = {
+            nombre: '',
+            fecha: '',
+            enlaces: [],
+            descripcion: '',
+            educacion: [],
+            experiencia: [],
+            idiomas: [],
+            carnet: ''
+        };
+        
+        let enlacesTemp = [];
+        let esperandoRespuesta = false;
+
+        function addMessage(text, type) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addFormMessage(formElement) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.appendChild(formElement);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function mostrarFormularioEducacion() {
+            const formDiv = document.createElement('div');
+            formDiv.className = 'form-campo';
+            formDiv.innerHTML = `
+                <input type="text" class="eduInstitucion" placeholder="Institución">
+                <input type="text" class="eduInicio" placeholder="Fecha inicio (Mes Año)">
+                <input type="text" class="eduFin" placeholder="Fecha fin (Mes Año) o Actualidad">
+                <textarea class="eduDescripcion" placeholder="Descripción" rows="3"></textarea>
+                <button class="guardarEduBtn">Guardar Educación</button>
+            `;
+            
+            addFormMessage(formDiv);
+            
+            const btn = formDiv.querySelector('.guardarEduBtn');
+            btn.addEventListener('click', () => {
+                const institucion = formDiv.querySelector('.eduInstitucion').value;
+                const inicio = formDiv.querySelector('.eduInicio').value;
+                const fin = formDiv.querySelector('.eduFin').value;
+                const descripcion = formDiv.querySelector('.eduDescripcion').value;
+                
+                if (institucion && inicio && fin && descripcion) {
+                    cvData.educacion.push({ institucion, inicio, fin, descripcion });
+                    addMessage(`✅ Educación añadida: ${institucion}`, 'bot');
+                    addMessage("¿Quieres añadir otra educación? (responde si/no)", 'bot');
+                    step = 4.5;
+                    esperandoRespuesta = true;
+                } else {
+                    addMessage("❌ Completa todos los campos", 'bot');
+                }
+            });
+        }
+
+        function mostrarFormularioExperiencia() {
+            const formDiv = document.createElement('div');
+            formDiv.className = 'form-campo';
+            formDiv.innerHTML = `
+                <input type="text" class="expPuesto" placeholder="Puesto">
+                <input type="text" class="expEmpresa" placeholder="Empresa">
+                <input type="text" class="expInicio" placeholder="Fecha inicio (Mes Año)">
+                <input type="text" class="expFin" placeholder="Fecha fin (Mes Año) o Actualidad">
+                <textarea class="expDescripcion" placeholder="Descripción de responsabilidades" rows="3"></textarea>
+                <button class="guardarExpBtn">Guardar Experiencia</button>
+            `;
+            
+            addFormMessage(formDiv);
+            
+            const btn = formDiv.querySelector('.guardarExpBtn');
+            btn.addEventListener('click', () => {
+                const puesto = formDiv.querySelector('.expPuesto').value;
+                const empresa = formDiv.querySelector('.expEmpresa').value;
+                const inicio = formDiv.querySelector('.expInicio').value;
+                const fin = formDiv.querySelector('.expFin').value;
+                const descripcion = formDiv.querySelector('.expDescripcion').value;
+                
+                if (puesto && empresa && inicio && fin && descripcion) {
+                    cvData.experiencia.push({ puesto, empresa, inicio, fin, descripcion });
+                    addMessage(`✅ Experiencia añadida: ${puesto} en ${empresa}`, 'bot');
+                    addMessage("¿Quieres añadir otra experiencia? (responde si/no)", 'bot');
+                    step = 5.5;
+                    esperandoRespuesta = true;
+                } else {
+                    addMessage("❌ Completa todos los campos", 'bot');
+                }
+            });
+        }
+
+        function mostrarFormularioIdioma() {
+            const formDiv = document.createElement('div');
+            formDiv.className = 'form-campo';
+            formDiv.innerHTML = `
+                <input type="text" class="idiomaNombre" placeholder="Idioma">
+                <select class="idiomaNivel">
+                    <option value="">Selecciona nivel</option>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                </select>
+                <button class="guardarIdiomaBtn">Guardar Idioma</button>
+            `;
+            
+            addFormMessage(formDiv);
+            
+            const btn = formDiv.querySelector('.guardarIdiomaBtn');
+            btn.addEventListener('click', () => {
+                const idioma = formDiv.querySelector('.idiomaNombre').value;
+                const nivel = formDiv.querySelector('.idiomaNivel').value;
+                
+                if (idioma && nivel) {
+                    cvData.idiomas.push({ idioma, nivel });
+                    addMessage(`✅ Idioma añadido: ${idioma} - ${nivel}`, 'bot');
+                    addMessage("¿Quieres añadir otro idioma? (responde si/no)", 'bot');
+                    step = 6.5;
+                    esperandoRespuesta = true;
+                } else {
+                    addMessage("❌ Completa todos los campos", 'bot');
+                }
+            });
+        }
+
+        function procesarInput(input) {
+            if (!esperandoRespuesta) {
+                if (step === 0) {
+                    cvData.nombre = input;
+                    addMessage(input, 'user');
+                    addMessage("¿Cuál es tu fecha de nacimiento? (DD/MM/AAAA)", 'bot');
+                    step = 1;
+                    return;
+                }
+                
+                if (step === 1) {
+                    cvData.fecha = input;
+                    addMessage(input, 'user');
+                    addMessage("¿Tienes enlaces personales? Escribe el enlace o escribe 'continuar'", 'bot');
+                    step = 2;
+                    return;
+                }
+                
+                if (step === 2) {
+                    if (input.toLowerCase() === 'continuar') {
+                        addMessage('continuar', 'user');
+                        addMessage("No se añadieron enlaces", 'bot');
+                        addMessage("Escribe una breve descripción profesional:", 'bot');
+                        step = 3;
+                    } else {
+                        enlacesTemp.push(input);
+                        addMessage(input, 'user');
+                        addMessage("Añade otro enlace o escribe 'continuar'", 'bot');
+                    }
+                    return;
+                }
+                
+                if (step === 3) {
+                    cvData.enlaces = enlacesTemp;
+                    cvData.descripcion = input;
+                    addMessage(input, 'user');
+                    addMessage("📚 Ahora tu EDUCACIÓN:", 'bot');
+                    mostrarFormularioEducacion();
+                    step = 4;
+                    return;
+                }
+            } else {
+                addMessage(input, 'user');
+                
+                if (step === 4.5) {
+                    if (input.toLowerCase() === 'si') {
+                        mostrarFormularioEducacion();
+                        step = 4;
+                        esperandoRespuesta = false;
+                    } else {
+                        addMessage("💼 Ahora tu EXPERIENCIA LABORAL:", 'bot');
+                        mostrarFormularioExperiencia();
+                        step = 5;
+                        esperandoRespuesta = false;
+                    }
+                    return;
+                }
+                
+                if (step === 5.5) {
+                    if (input.toLowerCase() === 'si') {
+                        mostrarFormularioExperiencia();
+                        step = 5;
+                        esperandoRespuesta = false;
+                    } else {
+                        addMessage("🌍 Ahora tus IDIOMAS:", 'bot');
+                        mostrarFormularioIdioma();
+                        step = 6;
+                        esperandoRespuesta = false;
+                    }
+                    return;
+                }
+                
+                if (step === 6.5) {
+                    if (input.toLowerCase() === 'si') {
+                        mostrarFormularioIdioma();
+                        step = 6;
+                        esperandoRespuesta = false;
+                    } else {
+                        addMessage("🚗 ¿Tienes carnet de conducir? (responde si/no)", 'bot');
+                        step = 7;
+                        esperandoRespuesta = false;
+                    }
+                    return;
+                }
+            }
+            
+            if (step === 7) {
+                cvData.carnet = input.toLowerCase();
+                addMessage(input, 'user');
+                addMessage("✅ ¡CV completado! Puedes descargar tu CV.", 'bot');
+                document.getElementById('inputArea').style.display = 'none';
+                document.getElementById('downloadContainer').style.display = 'block';
+                return;
+            }
+        }
+
+        function generarHTML() {
+            let educacionHTML = '';
+            for (let edu of cvData.educacion) {
+                educacionHTML += `
+                    <div style="margin-bottom: 20px;">
+                        <strong>${edu.institucion}</strong><br>
+                        ${edu.inicio} - ${edu.fin}<br>
+                        <em>${edu.descripcion}</em>
+                    </div>
+                `;
+            }
+            
+            let experienciaHTML = '';
+            for (let exp of cvData.experiencia) {
+                experienciaHTML += `
+                    <div style="margin-bottom: 20px;">
+                        <strong>${exp.puesto}</strong> - ${exp.empresa}<br>
+                        ${exp.inicio} - ${exp.fin}<br>
+                        <em>${exp.descripcion}</em>
+                    </div>
+                `;
+            }
+            
+            let idiomasHTML = '';
+            for (let idi of cvData.idiomas) {
+                idiomasHTML += `<li>${idi.idioma} - ${idi.nivel}</li>`;
+            }
+            
+            let enlacesHTML = '';
+            if (cvData.enlaces.length > 0) {
+                enlacesHTML = `<p><strong>Enlaces:</strong><br>${cvData.enlaces.join('<br>')}</p>`;
+            }
+            
+            return `
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
+                    <h1 style="color: #667eea;">${cvData.nombre}</h1>
+                    <p><strong>Fecha nacimiento:</strong> ${cvData.fecha}</p>
+                    ${enlacesHTML}
+                    <p><strong>Perfil:</strong><br>${cvData.descripcion}</p>
+                    
+                    <h2 style="color: #764ba2; margin-top: 20px;">🎓 Educación</h2>
+                    ${educacionHTML || '<p>No especificada</p>'}
+                    
+                    <h2 style="color: #764ba2; margin-top: 20px;">💼 Experiencia</h2>
+                    ${experienciaHTML || '<p>No especificada</p>'}
+                    
+                    <h2 style="color: #764ba2; margin-top: 20px;">🌍 Idiomas</h2>
+                    <ul>${idiomasHTML || '<li>No especificados</li>'}</ul>
+                    
+                    <h2 style="color: #764ba2; margin-top: 20px;">🚗 Carnet</h2>
+                    <p>${cvData.carnet === 'si' ? 'Sí' : 'No'}</p>
+                </div>
+            `;
+        }
+
+        async function downloadPDF() {
+            const htmlContent = generarHTML();
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
+            document.body.appendChild(element);
+            
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `CV_${cvData.nombre.replace(/\s/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(element);
+        }
+
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (text === '') return;
+            procesarInput(text);
+            input.value = '';
+        });
+
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('sendBtn').click();
+            }
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', downloadPDF);
+    </script>
+</body>
+</html>
