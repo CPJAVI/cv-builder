@@ -122,6 +122,11 @@
             width: 100%;
         }
 
+        .btn-saltar {
+            background: #ff9800;
+            margin-top: 10px;
+        }
+
         .download-container {
             padding: 20px;
             background: white;
@@ -134,10 +139,22 @@
             padding: 15px;
             font-size: 18px;
             background: #e94560;
+            margin-bottom: 10px;
         }
 
         .download-btn:hover {
             background: #c73a54;
+        }
+
+        .reiniciar-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: #2196F3;
+        }
+
+        .reiniciar-btn:hover {
+            background: #0b7dda;
         }
     </style>
 </head>
@@ -155,6 +172,7 @@
         </div>
         <div class="download-container" id="downloadContainer">
             <button id="downloadBtn" class="download-btn">📄 DESCARGAR CV EN PDF</button>
+            <button id="reiniciarBtn" class="reiniciar-btn">🔄 EMPEZAR DE NUEVO</button>
         </div>
     </div>
 
@@ -174,6 +192,28 @@
         let enlacesTemp = [];
         let esperandoRespuesta = false;
 
+        function reiniciarTodo() {
+            step = 0;
+            cvData = {
+                nombre: '',
+                fecha: '',
+                enlaces: [],
+                descripcion: '',
+                educacion: [],
+                experiencia: [],
+                idiomas: [],
+                carnet: ''
+            };
+            enlacesTemp = [];
+            esperandoRespuesta = false;
+            
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('inputArea').style.display = 'flex';
+            document.getElementById('downloadContainer').style.display = 'none';
+            
+            addMessage("¡Hola! Vamos a crear tu CV. ¿Cuál es tu nombre y apellidos?", 'bot');
+        }
+
         function addMessage(text, type) {
             const messagesDiv = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
@@ -192,6 +232,43 @@
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
+        function mostrarFormularioEnlaces() {
+            const formDiv = document.createElement('div');
+            formDiv.className = 'form-campo';
+            formDiv.innerHTML = `
+                <input type="text" class="enlaceNombre" placeholder="Nombre (Ej: LinkedIn, GitHub, Twitter)">
+                <input type="text" class="enlaceUrl" placeholder="URL del enlace">
+                <button class="guardarEnlaceBtn">Guardar Enlace</button>
+                <button class="saltarEnlaceBtn btn-saltar">⏭️ No tengo enlaces</button>
+            `;
+            
+            addFormMessage(formDiv);
+            
+            const btnGuardar = formDiv.querySelector('.guardarEnlaceBtn');
+            btnGuardar.addEventListener('click', () => {
+                const nombre = formDiv.querySelector('.enlaceNombre').value;
+                const url = formDiv.querySelector('.enlaceUrl').value;
+                
+                if (nombre && url) {
+                    enlacesTemp.push({ nombre, url });
+                    addMessage(`✅ Enlace añadido: ${nombre} - ${url}`, 'bot');
+                    addMessage("¿Quieres añadir otro enlace? (responde si/no)", 'bot');
+                    step = 2.5;
+                    esperandoRespuesta = true;
+                } else {
+                    addMessage("❌ Completa ambos campos", 'bot');
+                }
+            });
+            
+            const btnSaltar = formDiv.querySelector('.saltarEnlaceBtn');
+            btnSaltar.addEventListener('click', () => {
+                addMessage("⏭️ Saltaste enlaces", 'bot');
+                addMessage("Escribe una breve descripción profesional:", 'bot');
+                step = 3;
+                esperandoRespuesta = false;
+            });
+        }
+
         function mostrarFormularioEducacion() {
             const formDiv = document.createElement('div');
             formDiv.className = 'form-campo';
@@ -201,12 +278,13 @@
                 <input type="text" class="eduFin" placeholder="Fecha fin (Mes Año) o Actualidad">
                 <textarea class="eduDescripcion" placeholder="Descripción" rows="3"></textarea>
                 <button class="guardarEduBtn">Guardar Educación</button>
+                <button class="saltarEduBtn btn-saltar">⏭️ No tengo educación</button>
             `;
             
             addFormMessage(formDiv);
             
-            const btn = formDiv.querySelector('.guardarEduBtn');
-            btn.addEventListener('click', () => {
+            const btnGuardar = formDiv.querySelector('.guardarEduBtn');
+            btnGuardar.addEventListener('click', () => {
                 const institucion = formDiv.querySelector('.eduInstitucion').value;
                 const inicio = formDiv.querySelector('.eduInicio').value;
                 const fin = formDiv.querySelector('.eduFin').value;
@@ -222,6 +300,15 @@
                     addMessage("❌ Completa todos los campos", 'bot');
                 }
             });
+            
+            const btnSaltar = formDiv.querySelector('.saltarEduBtn');
+            btnSaltar.addEventListener('click', () => {
+                addMessage("⏭️ Saltaste educación", 'bot');
+                addMessage("💼 Ahora tu EXPERIENCIA LABORAL:", 'bot');
+                mostrarFormularioExperiencia();
+                step = 5;
+                esperandoRespuesta = false;
+            });
         }
 
         function mostrarFormularioExperiencia() {
@@ -234,12 +321,13 @@
                 <input type="text" class="expFin" placeholder="Fecha fin (Mes Año) o Actualidad">
                 <textarea class="expDescripcion" placeholder="Descripción de responsabilidades" rows="3"></textarea>
                 <button class="guardarExpBtn">Guardar Experiencia</button>
+                <button class="saltarExpBtn btn-saltar">⏭️ No tengo experiencia</button>
             `;
             
             addFormMessage(formDiv);
             
-            const btn = formDiv.querySelector('.guardarExpBtn');
-            btn.addEventListener('click', () => {
+            const btnGuardar = formDiv.querySelector('.guardarExpBtn');
+            btnGuardar.addEventListener('click', () => {
                 const puesto = formDiv.querySelector('.expPuesto').value;
                 const empresa = formDiv.querySelector('.expEmpresa').value;
                 const inicio = formDiv.querySelector('.expInicio').value;
@@ -255,6 +343,15 @@
                 } else {
                     addMessage("❌ Completa todos los campos", 'bot');
                 }
+            });
+            
+            const btnSaltar = formDiv.querySelector('.saltarExpBtn');
+            btnSaltar.addEventListener('click', () => {
+                addMessage("⏭️ Saltaste experiencia", 'bot');
+                addMessage("🌍 Ahora tus IDIOMAS:", 'bot');
+                mostrarFormularioIdioma();
+                step = 6;
+                esperandoRespuesta = false;
             });
         }
 
@@ -273,12 +370,13 @@
                     <option value="C2">C2</option>
                 </select>
                 <button class="guardarIdiomaBtn">Guardar Idioma</button>
+                <button class="saltarIdiomaBtn btn-saltar">⏭️ No tengo idiomas</button>
             `;
             
             addFormMessage(formDiv);
             
-            const btn = formDiv.querySelector('.guardarIdiomaBtn');
-            btn.addEventListener('click', () => {
+            const btnGuardar = formDiv.querySelector('.guardarIdiomaBtn');
+            btnGuardar.addEventListener('click', () => {
                 const idioma = formDiv.querySelector('.idiomaNombre').value;
                 const nivel = formDiv.querySelector('.idiomaNivel').value;
                 
@@ -291,6 +389,14 @@
                 } else {
                     addMessage("❌ Completa todos los campos", 'bot');
                 }
+            });
+            
+            const btnSaltar = formDiv.querySelector('.saltarIdiomaBtn');
+            btnSaltar.addEventListener('click', () => {
+                addMessage("⏭️ Saltaste idiomas", 'bot');
+                addMessage("🚗 ¿Tienes carnet de conducir? (responde si/no)", 'bot');
+                step = 7;
+                esperandoRespuesta = false;
             });
         }
 
@@ -307,22 +413,9 @@
                 if (step === 1) {
                     cvData.fecha = input;
                     addMessage(input, 'user');
-                    addMessage("¿Tienes enlaces personales? Escribe el enlace o escribe 'continuar'", 'bot');
+                    addMessage("📎 Ahora tus ENLACES PERSONALES:", 'bot');
+                    mostrarFormularioEnlaces();
                     step = 2;
-                    return;
-                }
-                
-                if (step === 2) {
-                    if (input.toLowerCase() === 'continuar') {
-                        addMessage('continuar', 'user');
-                        addMessage("No se añadieron enlaces", 'bot');
-                        addMessage("Escribe una breve descripción profesional:", 'bot');
-                        step = 3;
-                    } else {
-                        enlacesTemp.push(input);
-                        addMessage(input, 'user');
-                        addMessage("Añade otro enlace o escribe 'continuar'", 'bot');
-                    }
                     return;
                 }
                 
@@ -337,6 +430,19 @@
                 }
             } else {
                 addMessage(input, 'user');
+                
+                if (step === 2.5) {
+                    if (input.toLowerCase() === 'si') {
+                        mostrarFormularioEnlaces();
+                        step = 2;
+                        esperandoRespuesta = false;
+                    } else {
+                        addMessage("Escribe una breve descripción profesional:", 'bot');
+                        step = 3;
+                        esperandoRespuesta = false;
+                    }
+                    return;
+                }
                 
                 if (step === 4.5) {
                     if (input.toLowerCase() === 'si') {
@@ -420,7 +526,16 @@
             
             let enlacesHTML = '';
             if (cvData.enlaces.length > 0) {
-                enlacesHTML = `<p><strong>Enlaces:</strong><br>${cvData.enlaces.join('<br>')}</p>`;
+                enlacesHTML = '<p><strong>🔗 Enlaces:</strong></p>';
+                for (let enlace of cvData.enlaces) {
+                    enlacesHTML += `
+                        <p style="margin-left: 15px;">
+                            <strong style="color: black; text-decoration: none; font-weight: bold;">
+                                <a href="${enlace.url}" style="color: black; text-decoration: none; font-weight: bold;">${enlace.nombre}</a>
+                            </strong>
+                        </p>
+                    `;
+                }
             }
             
             return `
@@ -478,6 +593,7 @@
         });
 
         document.getElementById('downloadBtn').addEventListener('click', downloadPDF);
+        document.getElementById('reiniciarBtn').addEventListener('click', reiniciarTodo);
     </script>
 </body>
 </html>
