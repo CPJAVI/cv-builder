@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Constructor de CV</title>
+    <title>CV Builder</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
@@ -156,28 +156,72 @@
         .reiniciar-btn:hover {
             background: #0b7dda;
         }
+
+        /* Modal de idioma */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 30px;
+            color: #667eea;
+        }
+
+        .lang-btn {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
     </style>
 </head>
 <body>
-    <div class="chat-container">
+    <div id="languageModal" class="modal">
+        <div class="modal-content">
+            <h2>🌍 Select Language / Selecciona Idioma</h2>
+            <button id="selectSpanish" class="lang-btn">🇪🇸 Español</button>
+            <button id="selectEnglish" class="lang-btn">🇬🇧 English</button>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatContainer" style="display: none;">
         <div class="chat-header">
-            <h2>📄 Constructor de CV</h2>
+            <h2 id="headerTitle">📄 Constructor de CV</h2>
         </div>
         <div class="chat-messages" id="chatMessages">
-            <div class="message bot">¡Hola! Vamos a crear tu CV. ¿Cuál es tu nombre y apellidos?</div>
+            <div class="message bot" id="welcomeMessage">¡Hola! Vamos a crear tu CV. ¿Cuál es tu nombre y apellidos?</div>
         </div>
         <div class="input-area" id="inputArea">
             <input type="text" id="chatInput" placeholder="Escribe aquí...">
             <button id="sendBtn">Enviar</button>
         </div>
         <div class="download-container" id="downloadContainer">
-            <button id="downloadBtn" class="download-btn">📄 DESCARGAR CV EN PDF</button>
-            <button id="reiniciarBtn" class="reiniciar-btn">🔄 EMPEZAR DE NUEVO</button>
+            <button id="downloadBtn" class="download-btn" id="downloadBtnText">📄 DESCARGAR CV EN PDF</button>
+            <button id="reiniciarBtn" class="reiniciar-btn" id="restartBtnText">🔄 EMPEZAR DE NUEVO</button>
         </div>
     </div>
 
     <script>
         let step = 0;
+        let currentLang = 'es';
         let cvData = {
             nombre: '',
             fecha: '',
@@ -191,6 +235,122 @@
         
         let enlacesTemp = [];
         let esperandoRespuesta = false;
+
+        // Traducciones
+        const text = {
+            es: {
+                header: "📄 Constructor de CV",
+                welcome: "¡Hola! Vamos a crear tu CV. ¿Cuál es tu nombre y apellidos?",
+                askFecha: "¿Cuál es tu fecha de nacimiento? (DD/MM/AAAA)",
+                askEnlaces: "📎 Ahora tus ENLACES PERSONALES:",
+                formEnlaceNombre: "Nombre (Ej: LinkedIn, GitHub, Twitter)",
+                formEnlaceUrl: "URL del enlace",
+                btnGuardar: "Guardar Enlace",
+                btnSaltar: "⏭️ No tengo enlaces",
+                enlaceGuardado: "✅ Enlace añadido: ",
+                preguntarOtro: "¿Quieres añadir otro enlace? (responde si/no)",
+                saltarEnlaces: "⏭️ Saltaste enlaces",
+                askDescripcion: "Escribe una breve descripción profesional:",
+                askEducacion: "📚 Ahora tu EDUCACIÓN:",
+                institucion: "Institución",
+                fechaInicio: "Fecha inicio (Mes Año)",
+                fechaFin: "Fecha fin (Mes Año) o Actualidad",
+                descripcion: "Descripción",
+                guardarEducacion: "Guardar Educación",
+                noEducacion: "⏭️ No tengo educación",
+                educacionGuardada: "✅ Educación añadida: ",
+                saltarEducacion: "⏭️ Saltaste educación",
+                askExperiencia: "💼 Ahora tu EXPERIENCIA LABORAL:",
+                puesto: "Puesto",
+                empresa: "Empresa",
+                guardarExperiencia: "Guardar Experiencia",
+                noExperiencia: "⏭️ No tengo experiencia",
+                experienciaGuardada: "✅ Experiencia añadida: ",
+                saltarExperiencia: "⏭️ Saltaste experiencia",
+                askIdiomas: "🌍 Ahora tus IDIOMAS:",
+                idioma: "Idioma",
+                nivel: "Nivel",
+                guardarIdioma: "Guardar Idioma",
+                noIdiomas: "⏭️ No tengo idiomas",
+                idiomaGuardado: "✅ Idioma añadido: ",
+                saltarIdiomas: "⏭️ Saltaste idiomas",
+                askCarnet: "🚗 ¿Tienes carnet de conducir? (responde si/no)",
+                carnetSi: "si",
+                carnetNo: "no",
+                cvCompletado: "✅ ¡CV completado! Puedes descargar tu CV.",
+                downloadBtn: "📄 DESCARGAR CV EN PDF",
+                restartBtn: "🔄 EMPEZAR DE NUEVO",
+                campoObligatorio: "❌ Completa todos los campos",
+                noEnlaces: "No se añadieron enlaces",
+                noEspecificada: "No especificada",
+                noEspecificados: "No especificados",
+                enlacesTitulo: "🔗 Enlaces:",
+                perfil: "Perfil:",
+                educacionTitulo: "🎓 Educación",
+                experienciaTitulo: "💼 Experiencia",
+                idiomasTitulo: "🌍 Idiomas",
+                carnetTitulo: "🚗 Carnet",
+                si: "Sí",
+                no: "No",
+                fechaNacimiento: "Fecha nacimiento:"
+            },
+            en: {
+                header: "📄 CV Builder",
+                welcome: "Hello! Let's create your CV. What is your full name?",
+                askFecha: "What is your date of birth? (DD/MM/YYYY)",
+                askEnlaces: "📎 Now your PERSONAL LINKS:",
+                formEnlaceNombre: "Name (Eg: LinkedIn, GitHub, Twitter)",
+                formEnlaceUrl: "URL link",
+                btnGuardar: "Save Link",
+                btnSaltar: "⏭️ I have no links",
+                enlaceGuardado: "✅ Link added: ",
+                preguntarOtro: "Do you want to add another link? (answer yes/no)",
+                saltarEnlaces: "⏭️ You skipped links",
+                askDescripcion: "Write a brief professional description:",
+                askEducacion: "📚 Now your EDUCATION:",
+                institucion: "Institution",
+                fechaInicio: "Start date (Month Year)",
+                fechaFin: "End date (Month Year) or Present",
+                descripcion: "Description",
+                guardarEducacion: "Save Education",
+                noEducacion: "⏭️ I have no education",
+                educacionGuardada: "✅ Education added: ",
+                saltarEducacion: "⏭️ You skipped education",
+                askExperiencia: "💼 Now your WORK EXPERIENCE:",
+                puesto: "Position",
+                empresa: "Company",
+                guardarExperiencia: "Save Experience",
+                noExperiencia: "⏭️ I have no experience",
+                experienciaGuardada: "✅ Experience added: ",
+                saltarExperiencia: "⏭️ You skipped experience",
+                askIdiomas: "🌍 Now your LANGUAGES:",
+                idioma: "Language",
+                nivel: "Level",
+                guardarIdioma: "Save Language",
+                noIdiomas: "⏭️ I have no languages",
+                idiomaGuardado: "✅ Language added: ",
+                saltarIdiomas: "⏭️ You skipped languages",
+                askCarnet: "🚗 Do you have a driver's license? (answer yes/no)",
+                carnetSi: "yes",
+                carnetNo: "no",
+                cvCompletado: "✅ CV completed! You can download your CV.",
+                downloadBtn: "📄 DOWNLOAD CV AS PDF",
+                restartBtn: "🔄 START OVER",
+                campoObligatorio: "❌ Complete all fields",
+                noEnlaces: "No links added",
+                noEspecificada: "Not specified",
+                noEspecificados: "Not specified",
+                enlacesTitulo: "🔗 Links:",
+                perfil: "Profile:",
+                educacionTitulo: "🎓 Education",
+                experienciaTitulo: "💼 Work Experience",
+                idiomasTitulo: "🌍 Languages",
+                carnetTitulo: "🚗 Driver's License",
+                si: "Yes",
+                no: "No",
+                fechaNacimiento: "Date of birth:"
+            }
+        };
 
         function reiniciarTodo() {
             step = 0;
@@ -211,7 +371,7 @@
             document.getElementById('inputArea').style.display = 'flex';
             document.getElementById('downloadContainer').style.display = 'none';
             
-            addMessage("¡Hola! Vamos a crear tu CV. ¿Cuál es tu nombre y apellidos?", 'bot');
+            addMessage(text[currentLang].welcome, 'bot');
         }
 
         function addMessage(text, type) {
@@ -236,10 +396,10 @@
             const formDiv = document.createElement('div');
             formDiv.className = 'form-campo';
             formDiv.innerHTML = `
-                <input type="text" class="enlaceNombre" placeholder="Nombre (Ej: LinkedIn, GitHub, Twitter)">
-                <input type="text" class="enlaceUrl" placeholder="URL del enlace">
-                <button class="guardarEnlaceBtn">Guardar Enlace</button>
-                <button class="saltarEnlaceBtn btn-saltar">⏭️ No tengo enlaces</button>
+                <input type="text" class="enlaceNombre" placeholder="${text[currentLang].formEnlaceNombre}">
+                <input type="text" class="enlaceUrl" placeholder="${text[currentLang].formEnlaceUrl}">
+                <button class="guardarEnlaceBtn">${text[currentLang].btnGuardar}</button>
+                <button class="saltarEnlaceBtn btn-saltar">${text[currentLang].btnSaltar}</button>
             `;
             
             addFormMessage(formDiv);
@@ -251,19 +411,19 @@
                 
                 if (nombre && url) {
                     enlacesTemp.push({ nombre, url });
-                    addMessage(`✅ Enlace añadido: ${nombre} - ${url}`, 'bot');
-                    addMessage("¿Quieres añadir otro enlace? (responde si/no)", 'bot');
+                    addMessage(`${text[currentLang].enlaceGuardado}${nombre} - ${url}`, 'bot');
+                    addMessage(text[currentLang].preguntarOtro, 'bot');
                     step = 2.5;
                     esperandoRespuesta = true;
                 } else {
-                    addMessage("❌ Completa ambos campos", 'bot');
+                    addMessage(text[currentLang].campoObligatorio, 'bot');
                 }
             });
             
             const btnSaltar = formDiv.querySelector('.saltarEnlaceBtn');
             btnSaltar.addEventListener('click', () => {
-                addMessage("⏭️ Saltaste enlaces", 'bot');
-                addMessage("Escribe una breve descripción profesional:", 'bot');
+                addMessage(text[currentLang].saltarEnlaces, 'bot');
+                addMessage(text[currentLang].askDescripcion, 'bot');
                 step = 3;
                 esperandoRespuesta = false;
             });
@@ -273,12 +433,12 @@
             const formDiv = document.createElement('div');
             formDiv.className = 'form-campo';
             formDiv.innerHTML = `
-                <input type="text" class="eduInstitucion" placeholder="Institución">
-                <input type="text" class="eduInicio" placeholder="Fecha inicio (Mes Año)">
-                <input type="text" class="eduFin" placeholder="Fecha fin (Mes Año) o Actualidad">
-                <textarea class="eduDescripcion" placeholder="Descripción" rows="3"></textarea>
-                <button class="guardarEduBtn">Guardar Educación</button>
-                <button class="saltarEduBtn btn-saltar">⏭️ No tengo educación</button>
+                <input type="text" class="eduInstitucion" placeholder="${text[currentLang].institucion}">
+                <input type="text" class="eduInicio" placeholder="${text[currentLang].fechaInicio}">
+                <input type="text" class="eduFin" placeholder="${text[currentLang].fechaFin}">
+                <textarea class="eduDescripcion" placeholder="${text[currentLang].descripcion}" rows="3"></textarea>
+                <button class="guardarEduBtn">${text[currentLang].guardarEducacion}</button>
+                <button class="saltarEduBtn btn-saltar">${text[currentLang].noEducacion}</button>
             `;
             
             addFormMessage(formDiv);
@@ -292,19 +452,19 @@
                 
                 if (institucion && inicio && fin && descripcion) {
                     cvData.educacion.push({ institucion, inicio, fin, descripcion });
-                    addMessage(`✅ Educación añadida: ${institucion}`, 'bot');
-                    addMessage("¿Quieres añadir otra educación? (responde si/no)", 'bot');
+                    addMessage(`${text[currentLang].educacionGuardada}${institucion}`, 'bot');
+                    addMessage(text[currentLang].preguntarOtro, 'bot');
                     step = 4.5;
                     esperandoRespuesta = true;
                 } else {
-                    addMessage("❌ Completa todos los campos", 'bot');
+                    addMessage(text[currentLang].campoObligatorio, 'bot');
                 }
             });
             
             const btnSaltar = formDiv.querySelector('.saltarEduBtn');
             btnSaltar.addEventListener('click', () => {
-                addMessage("⏭️ Saltaste educación", 'bot');
-                addMessage("💼 Ahora tu EXPERIENCIA LABORAL:", 'bot');
+                addMessage(text[currentLang].saltarEducacion, 'bot');
+                addMessage(text[currentLang].askExperiencia, 'bot');
                 mostrarFormularioExperiencia();
                 step = 5;
                 esperandoRespuesta = false;
@@ -315,13 +475,13 @@
             const formDiv = document.createElement('div');
             formDiv.className = 'form-campo';
             formDiv.innerHTML = `
-                <input type="text" class="expPuesto" placeholder="Puesto">
-                <input type="text" class="expEmpresa" placeholder="Empresa">
-                <input type="text" class="expInicio" placeholder="Fecha inicio (Mes Año)">
-                <input type="text" class="expFin" placeholder="Fecha fin (Mes Año) o Actualidad">
-                <textarea class="expDescripcion" placeholder="Descripción de responsabilidades" rows="3"></textarea>
-                <button class="guardarExpBtn">Guardar Experiencia</button>
-                <button class="saltarExpBtn btn-saltar">⏭️ No tengo experiencia</button>
+                <input type="text" class="expPuesto" placeholder="${text[currentLang].puesto}">
+                <input type="text" class="expEmpresa" placeholder="${text[currentLang].empresa}">
+                <input type="text" class="expInicio" placeholder="${text[currentLang].fechaInicio}">
+                <input type="text" class="expFin" placeholder="${text[currentLang].fechaFin}">
+                <textarea class="expDescripcion" placeholder="${text[currentLang].descripcion}" rows="3"></textarea>
+                <button class="guardarExpBtn">${text[currentLang].guardarExperiencia}</button>
+                <button class="saltarExpBtn btn-saltar">${text[currentLang].noExperiencia}</button>
             `;
             
             addFormMessage(formDiv);
@@ -336,19 +496,19 @@
                 
                 if (puesto && empresa && inicio && fin && descripcion) {
                     cvData.experiencia.push({ puesto, empresa, inicio, fin, descripcion });
-                    addMessage(`✅ Experiencia añadida: ${puesto} en ${empresa}`, 'bot');
-                    addMessage("¿Quieres añadir otra experiencia? (responde si/no)", 'bot');
+                    addMessage(`${text[currentLang].experienciaGuardada}${puesto} en ${empresa}`, 'bot');
+                    addMessage(text[currentLang].preguntarOtro, 'bot');
                     step = 5.5;
                     esperandoRespuesta = true;
                 } else {
-                    addMessage("❌ Completa todos los campos", 'bot');
+                    addMessage(text[currentLang].campoObligatorio, 'bot');
                 }
             });
             
             const btnSaltar = formDiv.querySelector('.saltarExpBtn');
             btnSaltar.addEventListener('click', () => {
-                addMessage("⏭️ Saltaste experiencia", 'bot');
-                addMessage("🌍 Ahora tus IDIOMAS:", 'bot');
+                addMessage(text[currentLang].saltarExperiencia, 'bot');
+                addMessage(text[currentLang].askIdiomas, 'bot');
                 mostrarFormularioIdioma();
                 step = 6;
                 esperandoRespuesta = false;
@@ -359,9 +519,9 @@
             const formDiv = document.createElement('div');
             formDiv.className = 'form-campo';
             formDiv.innerHTML = `
-                <input type="text" class="idiomaNombre" placeholder="Idioma">
+                <input type="text" class="idiomaNombre" placeholder="${text[currentLang].idioma}">
                 <select class="idiomaNivel">
-                    <option value="">Selecciona nivel</option>
+                    <option value="">${text[currentLang].nivel}</option>
                     <option value="A1">A1</option>
                     <option value="A2">A2</option>
                     <option value="B1">B1</option>
@@ -369,8 +529,8 @@
                     <option value="C1">C1</option>
                     <option value="C2">C2</option>
                 </select>
-                <button class="guardarIdiomaBtn">Guardar Idioma</button>
-                <button class="saltarIdiomaBtn btn-saltar">⏭️ No tengo idiomas</button>
+                <button class="guardarIdiomaBtn">${text[currentLang].guardarIdioma}</button>
+                <button class="saltarIdiomaBtn btn-saltar">${text[currentLang].noIdiomas}</button>
             `;
             
             addFormMessage(formDiv);
@@ -382,19 +542,19 @@
                 
                 if (idioma && nivel) {
                     cvData.idiomas.push({ idioma, nivel });
-                    addMessage(`✅ Idioma añadido: ${idioma} - ${nivel}`, 'bot');
-                    addMessage("¿Quieres añadir otro idioma? (responde si/no)", 'bot');
+                    addMessage(`${text[currentLang].idiomaGuardado}${idioma} - ${nivel}`, 'bot');
+                    addMessage(text[currentLang].preguntarOtro, 'bot');
                     step = 6.5;
                     esperandoRespuesta = true;
                 } else {
-                    addMessage("❌ Completa todos los campos", 'bot');
+                    addMessage(text[currentLang].campoObligatorio, 'bot');
                 }
             });
             
             const btnSaltar = formDiv.querySelector('.saltarIdiomaBtn');
             btnSaltar.addEventListener('click', () => {
-                addMessage("⏭️ Saltaste idiomas", 'bot');
-                addMessage("🚗 ¿Tienes carnet de conducir? (responde si/no)", 'bot');
+                addMessage(text[currentLang].saltarIdiomas, 'bot');
+                addMessage(text[currentLang].askCarnet, 'bot');
                 step = 7;
                 esperandoRespuesta = false;
             });
@@ -405,7 +565,7 @@
                 if (step === 0) {
                     cvData.nombre = input;
                     addMessage(input, 'user');
-                    addMessage("¿Cuál es tu fecha de nacimiento? (DD/MM/AAAA)", 'bot');
+                    addMessage(text[currentLang].askFecha, 'bot');
                     step = 1;
                     return;
                 }
@@ -413,7 +573,7 @@
                 if (step === 1) {
                     cvData.fecha = input;
                     addMessage(input, 'user');
-                    addMessage("📎 Ahora tus ENLACES PERSONALES:", 'bot');
+                    addMessage(text[currentLang].askEnlaces, 'bot');
                     mostrarFormularioEnlaces();
                     step = 2;
                     return;
@@ -423,7 +583,7 @@
                     cvData.enlaces = enlacesTemp;
                     cvData.descripcion = input;
                     addMessage(input, 'user');
-                    addMessage("📚 Ahora tu EDUCACIÓN:", 'bot');
+                    addMessage(text[currentLang].askEducacion, 'bot');
                     mostrarFormularioEducacion();
                     step = 4;
                     return;
@@ -432,12 +592,12 @@
                 addMessage(input, 'user');
                 
                 if (step === 2.5) {
-                    if (input.toLowerCase() === 'si') {
+                    if (input.toLowerCase() === 'si' || input.toLowerCase() === 'yes') {
                         mostrarFormularioEnlaces();
                         step = 2;
                         esperandoRespuesta = false;
                     } else {
-                        addMessage("Escribe una breve descripción profesional:", 'bot');
+                        addMessage(text[currentLang].askDescripcion, 'bot');
                         step = 3;
                         esperandoRespuesta = false;
                     }
@@ -445,12 +605,12 @@
                 }
                 
                 if (step === 4.5) {
-                    if (input.toLowerCase() === 'si') {
+                    if (input.toLowerCase() === 'si' || input.toLowerCase() === 'yes') {
                         mostrarFormularioEducacion();
                         step = 4;
                         esperandoRespuesta = false;
                     } else {
-                        addMessage("💼 Ahora tu EXPERIENCIA LABORAL:", 'bot');
+                        addMessage(text[currentLang].askExperiencia, 'bot');
                         mostrarFormularioExperiencia();
                         step = 5;
                         esperandoRespuesta = false;
@@ -459,12 +619,12 @@
                 }
                 
                 if (step === 5.5) {
-                    if (input.toLowerCase() === 'si') {
+                    if (input.toLowerCase() === 'si' || input.toLowerCase() === 'yes') {
                         mostrarFormularioExperiencia();
                         step = 5;
                         esperandoRespuesta = false;
                     } else {
-                        addMessage("🌍 Ahora tus IDIOMAS:", 'bot');
+                        addMessage(text[currentLang].askIdiomas, 'bot');
                         mostrarFormularioIdioma();
                         step = 6;
                         esperandoRespuesta = false;
@@ -473,12 +633,12 @@
                 }
                 
                 if (step === 6.5) {
-                    if (input.toLowerCase() === 'si') {
+                    if (input.toLowerCase() === 'si' || input.toLowerCase() === 'yes') {
                         mostrarFormularioIdioma();
                         step = 6;
                         esperandoRespuesta = false;
                     } else {
-                        addMessage("🚗 ¿Tienes carnet de conducir? (responde si/no)", 'bot');
+                        addMessage(text[currentLang].askCarnet, 'bot');
                         step = 7;
                         esperandoRespuesta = false;
                     }
@@ -489,7 +649,7 @@
             if (step === 7) {
                 cvData.carnet = input.toLowerCase();
                 addMessage(input, 'user');
-                addMessage("✅ ¡CV completado! Puedes descargar tu CV.", 'bot');
+                addMessage(text[currentLang].cvCompletado, 'bot');
                 document.getElementById('inputArea').style.display = 'none';
                 document.getElementById('downloadContainer').style.display = 'block';
                 return;
@@ -526,7 +686,7 @@
             
             let enlacesHTML = '';
             if (cvData.enlaces.length > 0) {
-                enlacesHTML = '<p><strong>🔗 Enlaces:</strong></p>';
+                enlacesHTML = `<p><strong>${text[currentLang].enlacesTitulo}</strong></p>`;
                 for (let enlace of cvData.enlaces) {
                     enlacesHTML += `
                         <p style="margin-left: 15px;">
@@ -541,21 +701,21 @@
             return `
                 <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
                     <h1 style="color: #667eea;">${cvData.nombre}</h1>
-                    <p><strong>Fecha nacimiento:</strong> ${cvData.fecha}</p>
+                    <p><strong>${text[currentLang].fechaNacimiento}</strong> ${cvData.fecha}</p>
                     ${enlacesHTML}
-                    <p><strong>Perfil:</strong><br>${cvData.descripcion}</p>
+                    <p><strong>${text[currentLang].perfil}</strong><br>${cvData.descripcion}</p>
                     
-                    <h2 style="color: #764ba2; margin-top: 20px;">🎓 Educación</h2>
-                    ${educacionHTML || '<p>No especificada</p>'}
+                    <h2 style="color: #764ba2; margin-top: 20px;">${text[currentLang].educacionTitulo}</h2>
+                    ${educacionHTML || `<p>${text[currentLang].noEspecificada}</p>`}
                     
-                    <h2 style="color: #764ba2; margin-top: 20px;">💼 Experiencia</h2>
-                    ${experienciaHTML || '<p>No especificada</p>'}
+                    <h2 style="color: #764ba2; margin-top: 20px;">${text[currentLang].experienciaTitulo}</h2>
+                    ${experienciaHTML || `<p>${text[currentLang].noEspecificada}</p>`}
                     
-                    <h2 style="color: #764ba2; margin-top: 20px;">🌍 Idiomas</h2>
-                    <ul>${idiomasHTML || '<li>No especificados</li>'}</ul>
+                    <h2 style="color: #764ba2; margin-top: 20px;">${text[currentLang].idiomasTitulo}</h2>
+                    <ul>${idiomasHTML || `<li>${text[currentLang].noEspecificados}</li>`}</ul>
                     
-                    <h2 style="color: #764ba2; margin-top: 20px;">🚗 Carnet</h2>
-                    <p>${cvData.carnet === 'si' ? 'Sí' : 'No'}</p>
+                    <h2 style="color: #764ba2; margin-top: 20px;">${text[currentLang].carnetTitulo}</h2>
+                    <p>${cvData.carnet === 'si' || cvData.carnet === 'yes' ? text[currentLang].si : text[currentLang].no}</p>
                 </div>
             `;
         }
@@ -578,11 +738,25 @@
             document.body.removeChild(element);
         }
 
+        // Inicializar según idioma seleccionado
+        function initLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('headerTitle').textContent = text[lang].header;
+            document.getElementById('downloadBtn').textContent = text[lang].downloadBtn;
+            document.getElementById('reiniciarBtn').textContent = text[lang].restartBtn;
+            document.getElementById('welcomeMessage').textContent = text[lang].welcome;
+            document.getElementById('chatContainer').style.display = 'block';
+            document.getElementById('languageModal').style.display = 'none';
+        }
+
+        document.getElementById('selectSpanish').addEventListener('click', () => initLanguage('es'));
+        document.getElementById('selectEnglish').addEventListener('click', () => initLanguage('en'));
+
         document.getElementById('sendBtn').addEventListener('click', () => {
             const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (text === '') return;
-            procesarInput(text);
+            const textValue = input.value.trim();
+            if (textValue === '') return;
+            procesarInput(textValue);
             input.value = '';
         });
 
